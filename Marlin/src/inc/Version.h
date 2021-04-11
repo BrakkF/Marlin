@@ -25,7 +25,7 @@
  * Release version. Leave the Marlin version or apply a custom scheme.
  */
 #ifndef SHORT_BUILD_VERSION
-  #define SHORT_BUILD_VERSION "E3V2-Extensible-UI"
+  #define SHORT_BUILD_VERSION "Jyers_20210411-1000"  //#define SHORT_BUILD_VERSION "E3V2-Extensible-UI"
 #endif
 
 /**
