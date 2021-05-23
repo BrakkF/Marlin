@@ -35,8 +35,10 @@ enum processID : uint8_t {
   Main, Print, Menu, Value, Option, File, Popup, Confirm, Wait
 };
 
-enum popupID : uint8_t {
-  Pause, Stop, Resume, SaveLevel, ETemp, ConfFilChange, Level, Home, MoveWait, Heating, Complete, FilLoad, FilChange, UI, TempWarn, Runout, PIDWait
+enum PopupID : uint8_t {
+  Pause, Stop, Resume, SaveLevel, ETemp, ConfFilChange, PurgeMore,
+  Level, Home, MoveWait, Heating,  FilLoad, FilChange, TempWarn, Runout, PIDWait, Resuming,
+  FilInsert, HeaterTime, UserInput, LevelError, InvalidMesh, UI, Complete
 };
 
 enum menuID : uint8_t {
@@ -185,7 +187,7 @@ enum menuID : uint8_t {
 #define ICON_Info_1               91
 
 // Custom icons
-#if ENABLED(CREALITY_DWIN_EXTUI_CUSTOM_ICONS)
+#if ENABLED(DWIN_CREALITY_LCD_CUSTOM_ICONS)
   // index of every custom icon should be >= CUSTOM_ICON_START
   #define CUSTOM_ICON_START         ICON_Checkbox_F 
   #define ICON_Checkbox_F           200
@@ -265,6 +267,7 @@ enum colorID : uint8_t {
 class CrealityDWINClass {
 
 public:
+  static constexpr size_t eeprom_data_size = 48;
   struct EEPROM_Settings { // use bit fields to save space, max 48 bytes
     bool time_format_textual : 1;
     bool beeperenable : 1;
@@ -284,20 +287,20 @@ public:
     uint8_t coordinates_split_line : 4;
   } eeprom_settings;
 
-  char *color_names[11] = {(char*)"Default",(char*)"White",(char*)"Green",(char*)"Cyan",(char*)"Blue",(char*)"Magenta",(char*)"Red",(char*)"Orange",(char*)"Yellow",(char*)"Brown",(char*)"Black"};
+  const char * const color_names[11] = {"Default", "White", "Green", "Cyan", "Blue", "Magenta", "Red", "Orange", "Yellow", "Brown", "Black"};
+  const char * const preheat_modes[3] = {"Both", "Hotend", "Bed"};
 
 
-  inline void Clear_Screen(uint8_t e=3);
-  inline void Draw_Float(float value, uint8_t row, bool selected=false, uint8_t minunit=10);
-  inline void Draw_Option(uint8_t value, char** options, uint8_t row, bool selected=false, bool color=false);
-  inline uint16_t GetColor(uint8_t color, uint16_t original, bool light=false);
-  inline void Draw_Checkbox(uint8_t row, bool value);
-  inline void Draw_Title(char* title);
-  inline void Draw_Menu_Item(uint8_t row, uint8_t icon=0, char * const label1=NULL, char * const label2=NULL, bool more=false, bool centered=false);
-  inline void Draw_Menu(uint8_t menu, uint8_t select=0, uint8_t scroll=0);
-  inline void Redraw_Menu(bool lastselection=false, bool lastmenu=false);
-  inline void Redraw_Screen();
-
+  void Clear_Screen(uint8_t e=3);
+  void Draw_Float(float value, uint8_t row, bool selected=false, uint8_t minunit=10);
+  void Draw_Option(uint8_t value, const char * const * options, uint8_t row, bool selected=false, bool color=false);
+  uint16_t GetColor(uint8_t color, uint16_t original, bool light=false);
+  void Draw_Checkbox(uint8_t row, bool value);
+  void Draw_Title(const char * title);
+  void Draw_Menu_Item(uint8_t row, uint8_t icon=0, const char * const label1=NULL, const char * const label2=NULL, bool more=false, bool centered=false);
+  void Draw_Menu(uint8_t menu, uint8_t select=0, uint8_t scroll=0);
+  void Redraw_Menu(bool lastprocess=true, bool lastselection=false, bool lastmenu=false);
+  void Redraw_Screen();
 
   void Main_Menu_Icons();
   void Draw_Main_Menu(uint8_t select=0);
@@ -311,7 +314,7 @@ public:
   void Draw_SD_Item(uint8_t item, uint8_t row);
   void Draw_SD_List(bool removed=false);
   void Draw_Status_Area(bool icons=false);
-  void Draw_Popup(const char *line1, const char *line2, const char *line3, uint8_t mode, uint8_t icon=0);
+  void Draw_Popup(const char * line1, const char * line2, const char * line3, uint8_t mode, uint8_t icon=0);
   void Popup_Select();
   void Update_Status_Bar(bool refresh=false);
 
@@ -320,23 +323,23 @@ public:
     void Set_Mesh_Viewer_Status();
   #endif
 
-  char* Get_Menu_Title(uint8_t menu);
-  int Get_Menu_Size(uint8_t menu);
+  const char * Get_Menu_Title(uint8_t menu);
+  uint8_t Get_Menu_Size(uint8_t menu);
   void Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw=true);
 
 
-  void Popup_Handler(uint8_t popupid, bool option = false);
-  void Confirm_Handler(const char * const msg);
+  void Popup_Handler(PopupID popupid, bool option = false);
+  void Confirm_Handler(PopupID popupid);
 
 
-  inline void Main_Menu_Control();
-  inline void Menu_Control();
-  inline void Value_Control();
-  inline void Option_Control();
-  inline void File_Control();
-  inline void Print_Screen_Control();
-  inline void Popup_Control();
-  inline void Confirm_Control();
+  void Main_Menu_Control();
+  void Menu_Control();
+  void Value_Control();
+  void Option_Control();
+  void File_Control();
+  void Print_Screen_Control();
+  void Popup_Control();
+  void Confirm_Control();
 
 
   void Setup_Value(float value, float min, float max, float unit, uint8_t type);
@@ -346,19 +349,18 @@ public:
   void Modify_Value(int16_t &value, float min, float max, float unit, void (*f)()=NULL);
   void Modify_Value(uint32_t &value, float min, float max, float unit, void (*f)()=NULL);
   void Modify_Value(int8_t &value, float min, float max, float unit, void (*f)()=NULL);
-  void Modify_Option(uint8_t value, char** options, uint8_t max);
+  void Modify_Option(uint8_t value, const char * const * options, uint8_t max);
 
 
   void Update_Status(const char * const text);
   void Start_Print(bool sd);
   void Stop_Print();
   void Update();
+  void State_Update();
   void Screen_Update();
-  void Startup();
   void AudioFeedback(const bool success=true);
-  void SDCardInsert();
-  void Save_Settings();
-  void Load_Settings();
+  void Save_Settings(char *buff);
+  void Load_Settings(const char *buff);
 
 };
 
