@@ -4071,6 +4071,9 @@ void CrealityDWINClass::Menu_Item_Handler(uint8_t menu, uint8_t item, bool draw/
                     }
                     break;
                 #endif
+                default:
+                  Redraw_Menu(true, true, true);
+                  break;
               }
             }
             break;
@@ -4919,6 +4922,10 @@ void CrealityDWINClass::Confirm_Control() {
         break;
       case FilInsert:
         Popup_Handler(FilChange);
+        wait_for_user = false;
+        break;
+      case HeaterTime:
+        Popup_Handler(Heating);
         wait_for_user = false;
         break;
       default:
